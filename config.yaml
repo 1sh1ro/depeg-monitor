@@ -1,0 +1,221 @@
+# 脱锚监控配置。这里没有密钥。
+# 密钥只放在环境变量或 GitHub Actions secrets 里。
+# This file holds addresses and thresholds only. No secrets.
+
+defaults:
+  peg: 1.0
+  peg_mode: usd
+  min_sources: 3
+  min_categories: 2
+  divergence_bps: 40
+  recovery_bps: 10
+  sanity_min: 0.5
+  sanity_max: 1.5
+  thresholds_bps:
+    info: 20
+    warning: 50
+    critical: 100
+  cooldown_seconds:
+    info: 21600
+    warning: 3600
+    critical: 1800
+
+# 公开 RPC。可用 RPC_ETHEREUM_URL / RPC_ARBITRUM_URL / RPC_BSC_URL 插到最前面。
+chains:
+  ethereum:
+    - https://ethereum.publicnode.com
+    - https://eth.llamarpc.com
+    - https://1rpc.io/eth
+  arbitrum:
+    - https://arb1.arbitrum.io/rpc
+    - https://arbitrum.publicnode.com
+  bsc:
+    - https://bsc.publicnode.com
+    - https://bsc-dataseed.binance.org
+
+coins:
+  USDC:
+    thresholds_bps: {info: 15, warning: 40, critical: 80}
+    recovery_bps: 8
+    token: {chain: ethereum, address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", decimals: 6}
+  USDT:
+    token: {chain: ethereum, address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", decimals: 6}
+  DAI:
+    token: {chain: ethereum, address: "0x6B175474E89094C44Da98b954EedeAC495271d0F", decimals: 18}
+  USDe:
+    token: {chain: ethereum, address: "0x4c9EDD5852cd905f086C759E8383e09bff1E68B3", decimals: 18}
+  USDS:
+    thresholds_bps: {info: 25, warning: 60, critical: 120}
+    token: {chain: ethereum, address: "0xdC035D45d973E3EC169d2276DDab16f1e407384F", decimals: 18}
+  PYUSD:
+    token: {chain: ethereum, address: "0x6c3ea9036406852006290770BEdFcAbA0e23A0e8", decimals: 6}
+  FDUSD:
+    # FDUSD 的 Chainlink 报价经常比 1 美元低几十个 bps，阈值比 USDC 宽。
+    thresholds_bps: {info: 40, warning: 80, critical: 150}
+    recovery_bps: 20
+    token: {chain: ethereum, address: "0xc5f0f7b66764F6ec8C8Dff7BA683102295E16409", decimals: 18}
+  sUSDe:
+    # sUSDe 是生息凭证，公允价值约 1.25 USDe，不是 1 美元。
+    peg_mode: vault
+    sanity_min: 0.4
+    sanity_max: 3.0
+    thresholds_bps: {info: 40, warning: 100, critical: 200}
+    recovery_bps: 20
+    token: {chain: ethereum, address: "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497", decimals: 18}
+    vault:
+      chain: ethereum
+      address: "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497"
+      one_share: 1000000000000000000
+      rate_decimals: 18
+      numeraire: USDe
+
+sources:
+  chainlink:
+    enabled: true
+    # 部分稳定币 heartbeat 为 24 小时，超过这个年龄的轮次丢弃。
+    max_age_seconds: 93600
+    feeds:
+      USDC:
+        - {chain: ethereum, address: "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6", decimals: 8}
+        - {chain: arbitrum, address: "0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3", decimals: 8}
+        - {chain: bsc, address: "0x51597f405303C4377E36123cBc172b13269EA163", decimals: 8}
+      USDT:
+        - {chain: ethereum, address: "0x3E7d1eAB13ad0104d2750B8863b489D65364e32D", decimals: 8}
+        - {chain: arbitrum, address: "0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7", decimals: 8}
+        - {chain: bsc, address: "0xB97Ad0E74fa7d920791E90258A6E2085088b4320", decimals: 8}
+      DAI:
+        - {chain: ethereum, address: "0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9", decimals: 8}
+        - {chain: bsc, address: "0x2aD32213F242f34DbB6e1331CAB21174040060F0", decimals: 18}
+      USDe:
+        - {chain: ethereum, address: "0xa569d910839Ae8865Da8F8e70FfFb0cBA869F961", decimals: 8}
+        - {chain: bsc, address: "0x10402B01cD2E6A9ed6DBe683CbC68f78Ff02f8FC", decimals: 8}
+      USDS:
+        - {chain: ethereum, address: "0xfF30586cD0F29eD462364C7e81375FC0C71219b1", decimals: 8}
+      PYUSD:
+        - {chain: ethereum, address: "0x8f1dF6D7F2db73eECE86a18b4381F4707b918FB1", decimals: 8}
+      FDUSD:
+        - {chain: ethereum, address: "0xfAA9147190c2C2cc5B8387B4f49016bDB3380572", decimals: 8}
+        - {chain: bsc, address: "0x390180e80058A8499930F0c13963AD3E0d86Bfc9", decimals: 8}
+      sUSDe:
+        # 市场价，不是 calculated 公允价值。公允价值走 vault。
+        - {chain: ethereum, address: "0xFF3BC18cCBd5999CE63E788A1c250a88626aD099", decimals: 8}
+
+  curve:
+    enabled: true
+    api_base: https://prices.curve.fi
+    api_max_age_seconds: 43200
+    pools:
+      - {coin: USDC, chain: ethereum, address: "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7", i: 1, j: 2, dx_decimals: 6, quote_decimals: 6, quote: USDT, label: "3pool USDC->USDT"}
+      - {coin: USDT, chain: ethereum, address: "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7", i: 2, j: 1, dx_decimals: 6, quote_decimals: 6, quote: USDC, label: "3pool USDT->USDC"}
+      - {coin: DAI, chain: ethereum, address: "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7", i: 0, j: 1, dx_decimals: 18, quote_decimals: 6, quote: USDC, label: "3pool DAI->USDC"}
+      - {coin: USDe, chain: ethereum, address: "0x02950460E2b9529D0E00284A5fA2d7bDF3fA4d72", i: 0, j: 1, dx_decimals: 18, quote_decimals: 6, quote: USDC, label: "USDe/USDC"}
+      - {coin: PYUSD, chain: ethereum, address: "0x383E6b4437b59fff47B619CBA855CA29342A8559", i: 0, j: 1, dx_decimals: 6, quote_decimals: 6, quote: USDC, label: "PYUSD/USDC"}
+      - {coin: sUSDe, chain: ethereum, address: "0x57064F49Ad7123C92560882a45518374ad982e85", i: 1, j: 0, dx_decimals: 18, quote_decimals: 18, quote: crvUSD, label: "sUSDe/crvUSD"}
+
+  uniswap_v3:
+    enabled: true
+    pools:
+      - {coin: USDC, chain: ethereum, address: "0x3416cF6C708Da44DB2624D63ea0AAef7113527C6", base_is_token0: true, decimals0: 6, decimals1: 6, quote: USDT, label: "USDC/USDT 0.01%"}
+      - {coin: USDC, chain: ethereum, address: "0x5777d92f208679DB4b9778590Fa3CAB3aC9e2168", base_is_token0: false, decimals0: 18, decimals1: 6, quote: DAI, label: "DAI/USDC 0.01%"}
+      - {coin: USDT, chain: ethereum, address: "0x3416cF6C708Da44DB2624D63ea0AAef7113527C6", base_is_token0: false, decimals0: 6, decimals1: 6, quote: USDC, label: "USDC/USDT 0.01%"}
+      - {coin: DAI, chain: ethereum, address: "0x5777d92f208679DB4b9778590Fa3CAB3aC9e2168", base_is_token0: true, decimals0: 18, decimals1: 6, quote: USDC, label: "DAI/USDC 0.01%"}
+      - {coin: USDe, chain: ethereum, address: "0xE6D7EbB9f1a9519dc06D557e03C522d53520e76A", base_is_token0: true, decimals0: 18, decimals1: 6, quote: USDC, label: "USDe/USDC 0.05%"}
+      - {coin: USDS, chain: ethereum, address: "0xe9F1E2EF814f5686C30ce6fb7103d0F780836C67", base_is_token0: false, decimals0: 18, decimals1: 18, quote: DAI, label: "USDS/DAI 0.3%"}
+      - {coin: FDUSD, chain: ethereum, address: "0xCdFc3d54C8452B12285Abb8c102dF09Ce83B8334", base_is_token0: true, decimals0: 18, decimals1: 6, quote: USDT, label: "FDUSD/USDT 0.01%"}
+
+  binance:
+    enabled: true
+    base_url: https://data-api.binance.vision
+    symbols:
+      USDC: {symbol: USDCUSDT, quote: USDT}
+      USDe: {symbol: USDEUSDT, quote: USDT}
+      FDUSD: {symbol: FDUSDUSDT, quote: USDT}
+
+  coinbase:
+    enabled: true
+    base_url: https://api.coinbase.com
+    symbols:
+      USDC: {symbol: USDC-USD, quote: USD}
+      USDT: {symbol: USDT-USD, quote: USD}
+      DAI: {symbol: DAI-USD, quote: USD}
+      PYUSD: {symbol: PYUSD-USD, quote: USD}
+
+  kraken:
+    enabled: true
+    base_url: https://api.kraken.com
+    symbols:
+      USDC: {symbol: USDCUSD, quote: USD}
+      USDT: {symbol: USDTUSD, quote: USD}
+      DAI: {symbol: DAIUSD, quote: USD}
+      PYUSD: {symbol: PYUSDUSD, quote: USD}
+      USDe: {symbol: USDEUSD, quote: USD}
+
+  okx:
+    enabled: true
+    base_url: https://www.okx.com
+    symbols:
+      USDC: {symbol: USDC-USDT, quote: USDT}
+      USDT: {symbol: USDT-USD, quote: USD}
+      PYUSD: {symbol: PYUSD-USDT, quote: USDT}
+      USDS: {symbol: USDS-USDT, quote: USDT}
+
+  bybit:
+    # 很多云厂商 IP 会被 Bybit 回 403。失败只影响这一路。
+    enabled: true
+    base_url: https://api.bybit.com
+    symbols:
+      USDC: {symbol: USDCUSDT, quote: USDT}
+      USDe: {symbol: USDEUSDT, quote: USDT}
+      DAI: {symbol: DAIUSDT, quote: USDT}
+      PYUSD: {symbol: PYUSDUSDT, quote: USDT}
+      FDUSD: {symbol: FDUSDUSDT, quote: USDT}
+
+  defillama:
+    enabled: true
+    base_url: https://coins.llama.fi
+    max_age_seconds: 21600
+
+  coingecko:
+    enabled: true
+    base_url: https://api.coingecko.com
+    ids:
+      USDC: usd-coin
+      USDT: tether
+      USDe: ethena-usde
+      DAI: dai
+      USDS: usds
+      FDUSD: first-digital-usd
+      PYUSD: paypal-usd
+      sUSDe: ethena-staked-usde
+
+context:
+  imbalance_excess_pp: 20
+  imbalance_jump_pp: 5
+  supply_change_pct: 3
+  supply_window_seconds: 86400
+  depth_drop_pct: 20
+  # 单次资金费低于 -2 bps（例如 -0.0002）才记为压力，避免正常波动刷屏。
+  funding_stress_rate: -0.0002
+  funding_coins: [USDe, sUSDe]
+  funding_instruments: [ETH-USDT-SWAP, BTC-USDT-SWAP]
+  pools:
+    - name: 3pool
+      chain: ethereum
+      address: "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7"
+      coins: [DAI, USDC, USDT]
+      decimals: [18, 6, 6]
+    - name: pyusd-usdc
+      chain: ethereum
+      address: "0x383E6b4437b59fff47B619CBA855CA29342A8559"
+      coins: [PYUSD, USDC]
+      decimals: [6, 6]
+    - name: usde-frax
+      chain: ethereum
+      address: "0x5dc1BF6f1e983C0b21EfB003c105133736fA0743"
+      coins: [FRAX, USDe]
+      decimals: [18, 18]
+    - name: susde-crvusd
+      chain: ethereum
+      address: "0x57064F49Ad7123C92560882a45518374ad982e85"
+      coins: [crvUSD, sUSDe]
+      decimals: [18, 18]

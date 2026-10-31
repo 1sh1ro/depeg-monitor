@@ -1,0 +1,10 @@
+services:
+  monitor:
+    build: .
+    env_file: .env
+    restart: unless-stopped
+    volumes:
+      - depeg-state:/data
+
+volumes:
+  depeg-state:
