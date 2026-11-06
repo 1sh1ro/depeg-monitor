@@ -1,16 +1,18 @@
 name: Depeg monitor
 
-# GitHub's shortest schedule is every 5 minutes, and runs are often late.
-# For tighter timing, run the Docker loop on a machine you control.
+# Scheduled runs are off: no notification secrets are configured, and alerts
+# must not be sent. A manual run prints alerts (--dry-run) unless that box
+# is cleared. GitHub's shortest schedule is every 5 minutes and is often
+# late; for tighter timing, run the Docker loop on a machine you control.
 on:
-  schedule:
-    - cron: "*/5 * * * *"
+  # schedule:
+  #   - cron: "*/5 * * * *"
   workflow_dispatch:
     inputs:
       dry_run:
         description: "Print alerts instead of sending them"
         type: boolean
-        default: false
+        default: true
 
 # contents: read blocks pushing commits. actions: write is only the state cache.
 permissions:
@@ -55,7 +57,9 @@ jobs:
           COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
         run: |
           args=(--config config.yaml --state .state/monitor_state.json)
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+          # Default is dry-run. Only a manual run that explicitly clears the
+          # box attempts to send, which needs TELEGRAM_* or a webhook secret.
+          if [ "${{ inputs.dry_run }}" != "false" ]; then
             args+=(--dry-run)
           fi
           python -m depeg_monitor "${args[@]}"
